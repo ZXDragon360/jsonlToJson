@@ -3,7 +3,8 @@
 if( $argc >= 2 ){
     $data = getRead($argv[1]);
     $data = array_reverse($data);
-    processJSONL($data);
+    $processed = processJSONL($data);
+    parseJSON($processed);
 } else {
     echo "No argument\n";
 }
@@ -38,11 +39,30 @@ function processJSONL( array $array){
         if(isset($v[$node])){
             $__parentId[] = $v;
         }else{
-            $v[$node] = $__parentId;
+            !empty($__parentId) ? $v[$node] = $__parentId : null;
             $listObj[] = $v;
             $__parentId = [];
         }
     }
-    file_put_contents('format.json', json_encode($listObj));
+    // file_put_contents('format.json', json_encode($listObj));
+    return $listObj;
+}
+
+function parseJSON(array $param){
+    $handle = fopen('quantity.csv','w');
+    $header = ['inventory_item_id','location_id','available'];
+    fputcsv($handle,$header);
+    foreach($param as $value){
+        if(isset($value['__parentId'])){
+            foreach($value['__parentId'] as $v){
+                $available = $v['available'];
+                $locationId = $v['location']['legacyResourceId'];
+                $inventoryItemId = $value['legacyResourceId'];
+                $data = [$inventoryItemId,$locationId,$available];
+                fputcsv($handle,$data);
+            }
+        }
+    }
+    fclose($handle);
 }
 ?>
